@@ -17,5 +17,13 @@
     "strict": true,
     "skipLibCheck": true,
     "noFallthroughCasesInSwitch": true,
-  }
+
+    /* Paths */
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+    "outDir": "./dist"
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "emails"]
 }
