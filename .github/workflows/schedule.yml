@@ -1,4 +1,4 @@
-name: Run app.ts every hour
+name: Run schduling jobs for crawling.
 
 on:
   schedule:
@@ -15,6 +15,12 @@ jobs:
         uses: oven-sh/setup-bun@v1
         with:
           bun-version: 1.0.27
+
+      # Github Reposiroty의 Secret 가져와서 .env 생성하기
+      - name: Create .env file
+        run: jq -r 'to_entries|map("\(.key)=\(.value|tostring)")|.[]' <<< "$SECRETS_CONTEXT" > .env
+        env:
+          SECRETS_CONTEXT: ${{ toJson(secrets) }}
 
       - name: Install dependencies
         run: bun install
