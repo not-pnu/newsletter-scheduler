@@ -27,8 +27,13 @@ export async function setMongoose() {
 export async function schedulingJobs() {
   console.log("-----------------------------");
   const now = new Date();
-  now.setHours(now.getHours() + 9);
-  console.log(`[Cron] Fetching RSS data (${now}).`);
+  const date = new Date(now);
+  const kstDate = date.toLocaleString("en-US", {
+    timeZone: "Asia/Seoul",
+    hour: "2-digit",
+    hour12: false,
+  });
+  console.log(`[Cron] Fetching RSS data (${kstDate}).`);
   try {
     const temp_departments = await Department.find({});
     const departments = temp_departments.filter((__, index) => {
