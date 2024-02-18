@@ -1,0 +1,11 @@
+{
+  "name": "newsletter-scheduler",
+  "module": "app.ts",
+  "type": "module",
+  "devDependencies": {
+    "@types/bun": "^1.0.6"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
