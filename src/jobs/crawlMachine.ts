@@ -1,7 +1,8 @@
 import type { IDepartment } from "@/models/department";
 import type { MessageContentType, MessagesType } from "@/types/message";
 import axios from "axios";
-import xml2js from "xml2js";
+import * as iconv from "iconv-lite";
+import * as cheerio from "cheerio";
 import type mongoose from "mongoose";
 import { scrapeNthImage } from "@/utils/util";
 
@@ -13,43 +14,64 @@ type Department = mongoose.Document<unknown, {}, IDepartment> &
 export async function crawlMachine(department: Department) {
   let messages: MessagesType = {};
   for (const [idx, board] of department.boards.entries()) {
-    let rssUrl = department.url + board;
-    rssUrl += "/rssList.do?row=5";
+    let htmlUrl = department.url + board;
+    htmlUrl += ".asp";
 
     try {
-      const res = await axios.get(rssUrl, {
-        headers: {
-          accept: "text/xml",
-          "Content-Type": "application/rss+xml",
-        },
-      });
+      const res = await axios.get(htmlUrl, { responseType: "arraybuffer" });
       if (res.status === 200) {
-        const xmlData = res.data;
+        const decodedContent = iconv.decode(res.data, "euc-kr");
+        const htmlData = decodedContent;
 
-        // parse xml data.
-        const result = await xml2js.parseStringPromise(xmlData);
+        // parse html data.
+        const $ = cheerio.load(htmlData);
 
         // get <item> data.
-        const items = result.rss.channel[0].item.splice(0, 5);
+        const items = $("tbody > tr").toArray().splice(0, 20);
+
         const message: MessageContentType = {};
         let latestPostIndex = -1;
 
         // print item data.
         for (const item of items) {
-          let postIdx = item.link[0].split("/")[6];
+          const $items = $(item);
+          const href = $items.find(".title.left a").attr("href");
+          const idxs = href?.match(/\d+/);
+          if (!idxs) {
+            throw new Error("[Cron] Failed to get post index.");
+          }
+
+          let postIdx = idxs[0];
           let imageIdx = 1;
 
           if (Number(postIdx) > latestPostIndex) {
             latestPostIndex = Number(postIdx);
           }
+          const boardNameParam = department.board_names[idx].split("|")[1];
+          const postUrl =
+            htmlUrl +
+            "?seq=" +
+            postIdx +
+            "&db=" +
+            boardNameParam +
+            "&page=1&perPage=20&SearchPart=BD_SUBJECT&SearchStr=&page_mode=view";
+          const images = await scrapeNthImage(postUrl, imageIdx);
 
-          const images = await scrapeNthImage(item.link[0], imageIdx);
+          const tempContent = $items.find(".title.left a").contents();
+          let textOnly = "";
+          tempContent.each(function (i, el) {
+            if (el.nodeType === 3) {
+              textOnly += $(el).text();
+            }
+          });
 
           message[postIdx] = {
-            title: item.title[0],
+            title: textOnly.trim(),
             images: images,
-            link: item.link[0],
-            pubDate: item.pubDate[0],
+            link: postUrl,
+            pubDate:
+              $items.find(".title.left .mobile-info span").first().text() +
+              " 00:00:00",
           };
         }
         //console.log(message);

@@ -11,7 +11,7 @@ export async function setMongoose() {
     process.env.NODE_ENV === "production"
       ? process.env.MONGO_ATLAS_CONNECTION_URL
       : process.env.MONGO_LOCAL_CONNECTION_URL;
-
+  console.log(CONNECTION_URL);
   try {
     if (!CONNECTION_URL) {
       throw new Error("[Fail] MongoDB Connection URL is not defined.");
@@ -35,7 +35,7 @@ export async function schedulingJobs() {
   console.log(`[Cron] Fetching RSS data (${kstDate}).`);
   try {
     const temp_departments = await Department.find({});
-    const departments = temp_departments.filter((__, index) => {
+    const departments = temp_departments.filter((_, index) => {
       return index % 12 === parseInt(kstDate) % 12;
     });
     if (departments.length === 0) {
@@ -51,7 +51,7 @@ export async function schedulingJobs() {
 
       let messages: MessagesType = {};
       console.log("[Cron] Fetching RSS data on", department.name);
-      if (department.name === "기계공학부") {
+      if (department.code === "me") {
         messages = await crawlMachine(department);
       } else {
         messages = await crawlGeneral(department);
