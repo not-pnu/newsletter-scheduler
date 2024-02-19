@@ -37,7 +37,7 @@ export async function schedulingJobs() {
   try {
     const temp_departments = await Department.find({});
     const departments = temp_departments.filter((__, index) => {
-      return index % 12 === (now.getHours() + 14) % 12;
+      return index % 12 === parseInt(kstDate) % 12;
     });
     if (departments.length === 0) {
       console.log("[Cron] Department is nothing.");
