@@ -8,4 +8,5 @@ async function main() {
 
 (async () => {
   await main();
+  process.exit(0);
 })();
