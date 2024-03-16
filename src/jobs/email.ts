@@ -5,6 +5,7 @@ import type { IUser } from "@/models/user";
 import type { MessagesType } from "@/types/message";
 import type { IDepartment } from "@/models/department";
 import { createPost, createPostForMe } from "./post";
+import user from "@/models/user";
 
 // send email for all in department.
 export async function sendEmail(
@@ -50,83 +51,11 @@ async function sendEmailFor(
   messages: MessagesType,
   department: IDepartment
 ) {
-  let count = 0;
-  let boardIdx = 0;
-  let content = "";
-  const boardNames = Object.keys(messages);
-  const updatedLatestPostIndexs = [];
-
-  let startDate = null;
-  let endDate = null;
-
-  for (const boardName of boardNames) {
-    const messageInfo = messages[boardName];
-    const postIdxs = Object.keys(messageInfo.message);
-    updatedLatestPostIndexs.push(
-      messageInfo.latestPostIndex === -1
-        ? user.latest_post_indexs[boardIdx]
-        : messageInfo.latestPostIndex
-    );
-    let pastPostIndexs = user.latest_post_indexs;
-
-    const result = createPost(
-      postIdxs,
-      pastPostIndexs,
-      messageInfo,
-      boardIdx,
-      endDate,
-      startDate,
-      count
-    );
-    const tempContent = result.tempContent;
-    count = result.count;
-    startDate = result.startDate;
-    endDate = result.endDate;
-
-    boardIdx++;
-    if (tempContent === "") {
-      continue;
-    }
-
-    content +=
-      `<br /><br />
-      <h1>[${department.name}] ${boardName}</h1>
-      <div style="background-color: black; width: 40vw; height: 3px"/>` +
-      tempContent;
-  }
-  content =
-    "" +
-    content +
-    `</br></br></br>
-    <div style="background-color: black; width: 70vw; height: 3px"/>
-    <div style="text-align: center; margin: 20px">
-      <a href="${
-        process.env.NODE_ENV === "production"
-          ? process.env.PRODUCTION_URL
-          : process.env.DEVELOPMENT_URL
-      }">Unsubscribe</a>
-    </div>`;
-
-  // if there is no new post, return.
-  if (count === 0 || startDate === undefined || endDate === undefined) {
-    return;
-  }
-
-  let dateString = "";
-
-  if (startDate !== null && endDate !== null) {
-    dateString =
-      startDate.getMonth() === endDate.getMonth() &&
-      startDate.getDate() === endDate.getDate()
-        ? `[${endDate.getFullYear()}-${
-            endDate.getMonth() + 1
-          }-${endDate.getDate()}]`
-        : `[${startDate.getFullYear()}-${
-            startDate.getMonth() + 1
-          }-${startDate.getDate()} ~ ${endDate.getFullYear()}-${
-            endDate.getMonth() + 1
-          }-${endDate.getDate()}]`;
-  }
+  const { count, dateString, content, updatedLatestPostIndexs } = withTemplate(
+    messages,
+    department,
+    user
+  );
 
   const mailOptions = {
     from: process.env.APP_TITLE,
@@ -383,4 +312,99 @@ export function stringToDate(dateString: string) {
     Number(milliseconds)
   );
   return dateObject;
+}
+
+function withTemplate(
+    messages: MessagesType,
+    department: IDepartment,
+    user: IUser,
+):{ count: number, dateString: string, content: string, updatedLatestPostIndexs: number[] } {
+  let count = 0;
+  let boardIdx = 0;
+  let content = "";
+  const boardNames = Object.keys(messages);
+  const updatedLatestPostIndexs = [];
+
+  let startDate = null;
+  let endDate = null;
+
+  for (const boardName of boardNames) {
+    const messageInfo = messages[boardName];
+    const postIdxs = Object.keys(messageInfo.message);
+    updatedLatestPostIndexs.push(
+        messageInfo.latestPostIndex === -1
+            ? user.latest_post_indexs[boardIdx]
+            : messageInfo.latestPostIndex
+    );
+    let pastPostIndexs = user.latest_post_indexs;
+
+    const result = createPost(
+        postIdxs,
+        pastPostIndexs,
+        messageInfo,
+        boardIdx,
+        endDate,
+        startDate,
+        count
+    );
+    const tempContent = result.tempContent;
+    count = result.count;
+    startDate = result.startDate;
+    endDate = result.endDate;
+
+    boardIdx++;
+    if (tempContent === "") {
+      continue;
+    }
+
+    content +=
+        `<br /><br />
+      <h1>[${department.name}] ${boardName}</h1>
+      <div style="background-color: black; width: 40vw; height: 3px"/>` +
+        tempContent;
+  }
+  content =
+      "" +
+      content +
+      `</br></br></br>
+    <div style="background-color: black; width: 70vw; height: 3px"/>
+    <div style="text-align: center; margin: 20px">
+      <a href="${
+          process.env.NODE_ENV === "production"
+              ? process.env.PRODUCTION_URL
+              : process.env.DEVELOPMENT_URL
+      }">Unsubscribe</a>
+    </div>`;
+
+  // if there is no new post, return.
+  if (count === 0 || startDate === undefined || endDate === undefined) {
+    return {
+        count: 0,
+        dateString: "",
+        content: "",
+        updatedLatestPostIndexs: [],
+    }
+  }
+
+  let dateString = "";
+  if (startDate !== null && endDate !== null) {
+    dateString =
+        startDate.getMonth() === endDate.getMonth() &&
+        startDate.getDate() === endDate.getDate()
+            ? `[${endDate.getFullYear()}-${
+                endDate.getMonth() + 1
+            }-${endDate.getDate()}]`
+            : `[${startDate.getFullYear()}-${
+                startDate.getMonth() + 1
+            }-${startDate.getDate()} ~ ${endDate.getFullYear()}-${
+                endDate.getMonth() + 1
+            }-${endDate.getDate()}]`;
+  }
+
+    return {
+    count,
+        dateString,
+        content,
+        updatedLatestPostIndexs,
+    };
 }

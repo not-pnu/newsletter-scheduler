@@ -27,3 +27,11 @@ jobs:
 
       - name: Run app.ts
         run: bun scheduling
+
+      - name: Commit and push if changed
+        run: |
+          git config --local user.email "min49590@gmail.com"
+          git config --local user.name "KimCookieYa"
+          git add data/index.json
+          git commit -m "Update index.json" || exit 0  # 변경사항이 없으면 커밋하지 않음
+          git push
