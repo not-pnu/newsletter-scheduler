@@ -78,7 +78,7 @@ async function sendEmailFor(
 
   try {
     await transporter.sendMail(mailOptions);
-    console.log("[Success] Send email to", user.email);
+    // console.log("[Success] Send email to", user.email);
     await User.updateOne(
       { email: user.email },
       { latest_post_indexs: updatedLatestPostIndexs }
@@ -193,7 +193,7 @@ async function sendEmailForMe(
 
   try {
     await transporter.sendMail(mailOptions);
-    console.log("[Success] Send email to", user.email);
+    // console.log("[Success] Send email to", user.email);
     await User.updateOne(
       { email: user.email },
       { latest_post_indexs: updatedLatestPostIndexs }
