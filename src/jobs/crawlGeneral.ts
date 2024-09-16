@@ -3,7 +3,7 @@ import type { MessageContentType, MessagesType } from "@/types/message";
 import axios from "axios";
 import xml2js from "xml2js";
 import type mongoose from "mongoose";
-import { scrapeNthImage } from "@/utils/util";
+import {isSpamContent, scrapeNthImage} from '@/utils/util';
 
 type Department = mongoose.Document<unknown, {}, IDepartment> &
   IDepartment & {
@@ -38,6 +38,10 @@ export async function crawlGeneral(department: Department) {
         for (const item of items) {
           let postIdx = item.link[0].split("/")[6];
           let imageIdx = 1;
+
+          if (isSpamContent(item.title[0])) {
+              continue;
+          }
 
           if (Number(postIdx) > latestPostIndex) {
             latestPostIndex = Number(postIdx);
